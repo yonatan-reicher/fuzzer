@@ -1,0 +1,27 @@
+services:
+  fuzzer-sandbox:
+    build:
+      context: . 
+      dockerfile: Dockerfile
+    image: fuzzer-sandbox:latest  # Name of the image
+    container_name: fuzzer-sandbox
+    stdin_open: true
+    tty: true
+    working_dir: /home/sandboxuser/fuzzer
+    command: cargo run --release  # Default command to run the Rust fuzzer
+    networks:
+      - sandbox-net
+    # I might have gone overboard with the resources and security options, but this is just a sandbox
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"          # Limit CPU usage
+          memory: "512M"       # Limit memory usage
+    security_opt:
+      - no-new-privileges:true  # Disable privilege escalation
+    cap_drop:
+      - ALL                    # Drop all Linux capabilities
+
+networks:
+  sandbox-net:
+    driver: bridge
