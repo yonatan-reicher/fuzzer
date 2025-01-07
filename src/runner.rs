@@ -1,8 +1,9 @@
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
 use crate::fuzzer::Fuzzer;
 
 #[derive(Debug)]
 pub struct ProgramResult {
+    // TODO: We should use `Vec<u8>` instead to support non-UTF-8 IO.
     pub stdout: String,
     pub stderr: String,
     pub exit_code: i32,
@@ -32,6 +33,7 @@ impl<T: Fuzzer> DefaultRunner<T> {
 
 impl<T: Fuzzer> Runner for DefaultRunner<T> {
     fn run(&mut self) {
+        // TODO: Here we want to run over and over again, right? And return some metrics?
         let input = self.fuzzer.generate_input();
         match self.run_with_input(&input) {
             Ok(result) => println!("Execution succeeded: {:?}", result),
