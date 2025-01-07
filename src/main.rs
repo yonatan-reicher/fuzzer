@@ -4,7 +4,7 @@ use std::process;
 use fuzzer::{DefaultRunner, MainFuzzer, Runner};
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum FuzzingMode {
     Strings,
     Urls,
