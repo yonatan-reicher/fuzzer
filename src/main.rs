@@ -1,5 +1,7 @@
-use std::env;
+use std::{env, time::Duration};
+use std::path::PathBuf;
 use std::process;
+use fuzzer::{DefaultRunner, MainFuzzer, Runner};
 
 
 #[derive(Debug)]
@@ -17,7 +19,6 @@ impl FuzzingMode {
         }
     }
 }
-
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -38,11 +39,21 @@ fn main() {
         }
     };
 
+    let executable = PathBuf::from(executable);
+    if !executable.exists() {
+        eprintln!("Executable not found: {:?}", executable);
+        process::exit(1);
+    }
+
     println!("Fuzzing mode: {:?}", mode);
-    println!("Target executable: {}", executable);
+    println!("Target executable: {:?}", executable);
 
-    // TODO: Instantiate Fuzzer
-    // TODO: Instantiate Runner
+    let mut runner = DefaultRunner::new(
+        executable,
+        // TODO: Get from CLI?
+        Duration::from_secs(5),
+        MainFuzzer::default(),
+    );
+    runner.run();
     // TODO: Report Metrics
-
 }
