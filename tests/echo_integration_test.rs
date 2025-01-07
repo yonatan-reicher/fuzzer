@@ -6,7 +6,7 @@ use fuzzer::{Fuzzer, Runner,DefaultRunner};
 struct MockFuzzer;
 
 impl Fuzzer for MockFuzzer {
-    fn generate_input(&self) -> String {
+    fn generate_input(&mut self) -> String {
         "Hello, world!\n".to_string()
     }
 }
@@ -27,9 +27,9 @@ fn test_runner_with_echo() {
         executable_path
     );
 
-    let executable = executable_path.to_str().expect("Invalid executable path").to_string();
+    let executable = executable_path;
     let fuzzer = MockFuzzer;
-    let runner = DefaultRunner::new(executable, Duration::from_secs(5), fuzzer);
+    let mut runner = DefaultRunner::new(executable, Duration::from_secs(5), fuzzer);
 
     // Run the `run_with_input` directly for testing
     let input = "Hello, world!\n";

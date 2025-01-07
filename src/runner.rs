@@ -9,19 +9,19 @@ pub struct ProgramResult {
 }
 
 pub trait Runner {
-    fn run(&self);
-    fn run_with_input(&self, input: &str) -> Result<ProgramResult, String>;
+    fn run(&mut self);
+    fn run_with_input(&mut self, input: &str) -> Result<ProgramResult, String>;
 }
 
 #[allow(dead_code)]
 pub struct DefaultRunner<F: Fuzzer> {
-    executable: String,
+    executable: PathBuf,
     timeout: Duration,
     fuzzer: F,
 }
 
 impl<T: Fuzzer> DefaultRunner<T> {
-    pub fn new(executable: String, timeout: Duration, fuzzer: T) -> Self {
+    pub fn new(executable: PathBuf, timeout: Duration, fuzzer: T) -> Self {
         Self {
             executable,
             timeout,
@@ -31,7 +31,7 @@ impl<T: Fuzzer> DefaultRunner<T> {
 }
 
 impl<T: Fuzzer> Runner for DefaultRunner<T> {
-    fn run(&self) {
+    fn run(&mut self) {
         let input = self.fuzzer.generate_input();
         match self.run_with_input(&input) {
             Ok(result) => println!("Execution succeeded: {:?}", result),
@@ -39,7 +39,7 @@ impl<T: Fuzzer> Runner for DefaultRunner<T> {
         }
     }
 
-    fn run_with_input(&self, input: &str) -> Result<ProgramResult, String> {
+    fn run_with_input(&mut self, input: &str) -> Result<ProgramResult, String> {
         // Placeholder for running the executable with input
         Ok(ProgramResult {
             stdout: input.to_string(),
