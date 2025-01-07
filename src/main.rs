@@ -20,7 +20,7 @@ impl FuzzingMode {
     }
 }
 
-fn main() {
+fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() != 3 {
@@ -31,13 +31,7 @@ fn main() {
     let mode_arg = &args[1];
     let executable = &args[2];
 
-    let mode = match FuzzingMode::from_arg(mode_arg) {
-        Ok(mode) => mode,
-        Err(err) => {
-            eprintln!("{}", err);
-            process::exit(1);
-        }
-    };
+    let mode = FuzzingMode::from_arg(mode_arg)?;
 
     let executable = PathBuf::from(executable);
     if !executable.exists() {
@@ -56,4 +50,6 @@ fn main() {
     );
     runner.run();
     // TODO: Report Metrics
+
+    Ok(())
 }
