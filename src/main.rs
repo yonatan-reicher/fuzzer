@@ -1,7 +1,7 @@
 use std::{env, time::Duration};
 use std::path::PathBuf;
 use std::process;
-use fuzzer::{DefaultRunner, MainFuzzer, Runner};
+use fuzzer::{MainRunner, MainFuzzer, Runner};
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -42,7 +42,7 @@ fn main() -> Result<(), String> {
     println!("Fuzzing mode: {:?}", mode);
     println!("Target executable: {:?}", executable);
 
-    let mut runner = DefaultRunner::new(
+    let mut runner = MainRunner::new(
         executable,
         // TODO: Get from CLI?
         Duration::from_secs(5),
