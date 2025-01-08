@@ -1,5 +1,6 @@
-use std::{path::PathBuf, time::Duration};
+use std::{io::{self, Write}, path::{Path, PathBuf}, sync::Mutex, time::Duration};
 use crate::fuzzer::Fuzzer;
+use std::thread;
 
 #[derive(Debug)]
 pub struct ProgramResult {
@@ -31,10 +32,37 @@ impl<T: Fuzzer> DefaultRunner<T> {
     }
 }
 
+/// Spawn a process with the given executable path and write the input to its
+/// stdin.
+fn spawn_with_stdin(executable: &Path, input: &[u8]) -> io::Result<std::process::Child> {
+    // TODO: Can we limit Command::new to only absolute paths?
+    let mut child = std::process::Command::new(executable)
+        .stdin(std::process::Stdio::piped())
+        .spawn()?;
+    child.stdin.as_mut()
+        .ok_or(io::Error::new(io::ErrorKind::Other, "could not open stdin pipe"))?
+        .write_all(input)?;
+    Ok(child)
+}
+
 impl<T: Fuzzer> Runner for DefaultRunner<T> {
     fn run(&mut self) {
         // TODO: Here we want to run over and over again, right? And return some metrics?
-        let input = self.fuzzer.generate_input();
+        
+        let mut stop = false;
+        let mut last_child: Mutex<Option<std::process::Child>> = None.into();
+        let t = thread::spawn(move || {
+            while !stop {
+                let input = self.fuzzer.generate_input();
+                // TODO: Switch to '?' instead of unwrap
+                last_child;
+                child.wait();
+            }
+        });
+
+        thread::sleep(self.timeout);
+
+        while !stop { }
         match self.run_with_input(&input) {
             Ok(result) => println!("Execution succeeded: {:?}", result),
             Err(e) => eprintln!("Execution failed: {:?}", e),
@@ -42,11 +70,11 @@ impl<T: Fuzzer> Runner for DefaultRunner<T> {
     }
 
     fn run_with_input(&mut self, input: &str) -> Result<ProgramResult, String> {
-        // Placeholder for running the executable with input
+
         Ok(ProgramResult {
-            stdout: input.to_string(),
-            stderr: "".to_string(),
-            exit_code: 0,
+            stdout: "default output".to_string(),
+            stderr: "default error".to_string(),
+            exit_code: child.wait_timeout
         })
     }
 }
