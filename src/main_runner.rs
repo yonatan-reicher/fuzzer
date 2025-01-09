@@ -33,7 +33,8 @@ fn spawn_with_stdin(executable: &Path, input: &[u8]) -> io::Result<SharedChild> 
     let child = SharedChild::spawn(
         std::process::Command::new(executable)
             .stdin(std::process::Stdio::piped())
-            .stdout(std::process::Stdio::null()),
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null()),
     )?;
     child
         .take_stdin()
