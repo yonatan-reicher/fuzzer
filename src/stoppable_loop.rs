@@ -1,4 +1,3 @@
-use std::io;
 use std::sync::{Arc, Mutex};
 
 /// Controls a loop that can be stopped from the outside, even if it is
