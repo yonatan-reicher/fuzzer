@@ -23,7 +23,7 @@ impl FuzzingMode {
 fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
 
-    if args.len() != 3 {
+    if args.len() < 3 {
         eprintln!("Usage: {} (--strings | --urls) <executable>", args[0]);
         process::exit(1);
     }
