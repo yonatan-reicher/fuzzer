@@ -100,7 +100,7 @@ impl<T: Fuzzer + Send> Runner for MainRunner<T> {
 
         let input_found = searcher.run();
         match input_found {
-            Some(result) => println!("Execution succeeded: {}", result),
+            Some(result) => println!("Execution succeeded. Output: '{}'", result),
             None => println!("Execution timed out"),
         }
     }
