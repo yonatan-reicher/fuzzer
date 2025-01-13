@@ -1,8 +1,12 @@
-#!/usr/bin/env python3
 import os
 import subprocess
 import time
-import argparse
+
+
+def is_windows() -> bool:
+    return os.name == "nt"
+
+
 
 BENCHMARK_DIR = "resources/benchmark"
 COMPILED_DIR = "resources/benchmark/bin"
@@ -12,8 +16,16 @@ CPP_COMPILER = "g++"
 C_FLAGS = ["-g", "-O2"]          # or e.g., ["-fsanitize=address", "-g", "-O1"]
 CPP_FLAGS = ["-g", "-O2"]        # similarly, can add sanitizers or coverage
 
-FUZZER_CMD = ["cargo", "run", "--", '--strings']
+FUZZER_BUILD_CMD = [
+    "cargo",
+    "build",
+    "--release",
+]
 
+FUZZER_CMD = [
+    "./target/release/fuzzer" if not is_windows() else "./target/release/fuzzer.exe",
+    "--strings",
+]
 
 
 def compile_source(source_path: str, output_path: str):
@@ -33,6 +45,20 @@ def compile_source(source_path: str, output_path: str):
         print(f"[ERROR] Failed to compile {source_path}:\n{result.stderr}")
         return False
     return True
+
+
+def build_fuzzer():
+    print("[INFO] Building fuzzer...", end="")
+    completed = subprocess.run(
+        FUZZER_BUILD_CMD,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=True
+    )
+    if completed.returncode != 0:
+        print("failed!")
+        raise RuntimeError(f"Failed to build fuzzer: {completed.stderr}")
+    print("done!")
 
 
 def run_fuzzer_on_file(executable_path: str):
@@ -82,9 +108,12 @@ def main():
         return
 
     # 4) Run the fuzzer against each compiled binary
+    build_fuzzer()
     for compiled_binary in compiled_paths:
         print(f"\n=== Running fuzzer on '{compiled_binary}' ===")
-        rc, out, err, duration = run_fuzzer_on_file(compiled_binary)
+        rc, out, err, duration = run_fuzzer_on_file(
+                compiled_binary if not is_windows() else f"{compiled_binary}.exe"
+            )
         print(f"Return code     : {rc}")
         print(f"Execution time  : {duration:.2f} seconds")
         print("Fuzzer stdout   :")
