@@ -67,4 +67,19 @@ mod tests {
         for i in 0..n { fuzz.generate_input(); }
         assert!(std::matches!(fuzz.state, State::Random { .. }));
     }
+
+    #[test]
+    fn fuzzer_generates_fast() {
+        let mut fuzz = MainFuzzer::default();
+
+        const AMOUNT: usize = 100000;
+        let start_time = std::time::Instant::now();
+        for _ in 0..AMOUNT {
+            std::hint::black_box(fuzz.generate_input());
+        }
+        let elapsed_seconds = start_time.elapsed().as_secs_f64();
+        let average_milis = elapsed_seconds * 1000.0 / AMOUNT as f64;
+        println!("Average time: {:.5} ms", average_milis);
+        assert!(average_milis < 0.01);
+    }
 }
