@@ -8,6 +8,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
     time::Duration,
+    fmt::{self, Formatter, Display},
 };
 
 pub struct MainRunner<F: Fuzzer> {
@@ -88,6 +89,19 @@ impl<'p, 'f, F: Fuzzer> LoopAction for RunnerLoopAction<'p, 'f, F> {
     }
 }
 
+struct InputFoundPrinter(Vec<u8>);
+
+impl Display for InputFoundPrinter {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        let bytes = &self.0;
+        if let Ok(string) = std::str::from_utf8(bytes) {
+            write!(f, "{}", string)
+        } else {
+            write!(f, "{:?}", bytes)
+        }
+    }
+}
+
 impl<T: Fuzzer + Send> Runner for MainRunner<T> {
     fn run(&mut self) {
         let mut searcher = StoppableLoop::new(RunnerLoopAction {
@@ -100,7 +114,7 @@ impl<T: Fuzzer + Send> Runner for MainRunner<T> {
 
         let input_found = searcher.run();
         match input_found {
-            Some(result) => println!("Execution succeeded. Output: '{}'", result),
+            Some(result) => println!("Execution succeeded. Output: '{}'", InputFoundPrinter(result)),
             None => println!("Execution timed out"),
         }
     }
