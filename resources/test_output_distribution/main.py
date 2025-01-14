@@ -42,7 +42,6 @@ def rm_words():
             "rm",
             WORDS_PATH,
         ],
-        check=True,
     )
 
 
