@@ -1,4 +1,4 @@
-# Fuzzi the Fuzzer
+# The Best Fuzzer
 
 ```
       Yonatan Reicher              &            Tomer Melnik
@@ -33,3 +33,5 @@ docker-compose run --rm fuzzer-sandbox <command>
 ## Unspecified Behaviour
 
 ## Resources Used
+
+https://github.com/danielmiessler/SecLists/blob/master/Fuzzing/big-list-of-naughty-strings.txt
