@@ -1,4 +1,5 @@
 use crate::Fuzzer;
+use crate::ALL_MUTATIONS;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 
 #[derive(Debug, Default, Clone)]
@@ -9,7 +10,13 @@ pub struct MainFuzzer {
 #[derive(Debug, Clone)]
 enum State {
     PredefinedInput(usize),
-    Random { random_state: SmallRng },
+    Random {
+        random_state: SmallRng,
+    },
+    Mutation {
+        random_state: SmallRng,
+        seeds: Vec<String>,
+    },
 }
 
 impl Default for State {
@@ -18,7 +25,8 @@ impl Default for State {
     }
 }
 
-const BIG_LIST_OF_NAUGHTY_STRINGS: &str = include_str!("../resources/big-list-of-naughty-strings.txt");
+const BIG_LIST_OF_NAUGHTY_STRINGS: &str =
+    include_str!("../resources/big-list-of-naughty-strings.txt");
 
 thread_local! {
     static PREDEFINED_INPUT: Vec<&'static str> =
@@ -52,8 +60,21 @@ impl Fuzzer for MainFuzzer {
                 }
                 ret
             }
+            State::Mutation {
+                ref mut random_state,
+                ref mut seeds,
+            } => mutate_seeds(seeds, random_state),
         }
     }
+}
+
+pub fn mutate_seeds(seeds: &mut Vec<String>, random_state: &mut SmallRng) -> String {
+    seeds.iter_mut().for_each(|seed| {
+        let mutation_index = random_state.gen_range(0..ALL_MUTATIONS.len());
+        ALL_MUTATIONS[mutation_index].apply(seed, random_state);
+    });
+
+    seeds.join("\n")
 }
 
 #[cfg(test)]
@@ -64,7 +85,9 @@ mod tests {
     fn fuzzer_moves_to_next_state() {
         let mut fuzz = MainFuzzer::default();
         let n = PREDEFINED_INPUT.with(|input| input.len());
-        for i in 0..n { fuzz.generate_input(); }
+        for i in 0..n {
+            fuzz.generate_input();
+        }
         assert!(std::matches!(fuzz.state, State::Random { .. }));
     }
 

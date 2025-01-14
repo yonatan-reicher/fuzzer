@@ -1,8 +1,7 @@
-use std::{env, time::Duration};
+use fuzzer::{MainFuzzer, MainRunner, Runner};
 use std::path::PathBuf;
 use std::process;
-use fuzzer::{MainRunner, MainFuzzer, Runner};
-
+use std::{env, time::Duration};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum FuzzingMode {

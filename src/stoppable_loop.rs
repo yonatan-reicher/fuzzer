@@ -72,7 +72,7 @@ impl<A: LoopAction> StoppableLoop<A> {
             let Some(wait) = self.start_action() else {
                 return None;
             };
-            
+
             let output = A::wait(wait);
             if self.state.lock().unwrap().is_stopped() {
                 return None;
@@ -83,7 +83,6 @@ impl<A: LoopAction> StoppableLoop<A> {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

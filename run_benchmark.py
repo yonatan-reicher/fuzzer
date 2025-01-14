@@ -67,7 +67,6 @@ def run_fuzzer_on_file(executable_path: str):
     Returns (return_code, stdout, stderr, duration).
     """
     cmd = FUZZER_CMD + [executable_path]
-    print(f"running: {cmd}")
     start_time = time.perf_counter()
     completed = subprocess.run(
         cmd,
@@ -79,7 +78,6 @@ def run_fuzzer_on_file(executable_path: str):
 
     duration = end_time - start_time
     return (completed.returncode, completed.stdout, completed.stderr, duration)
-
 
 def main():
     # 1) Create the compiled_binaries directory if it does not exist

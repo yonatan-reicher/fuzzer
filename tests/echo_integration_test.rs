@@ -1,6 +1,6 @@
-use std::time::Duration;
+use fuzzer::{DefaultRunner, Fuzzer, Runner};
 use std::path::PathBuf;
-use fuzzer::{Fuzzer, Runner,DefaultRunner};
+use std::time::Duration;
 
 // Mock implementation of Fuzzer for the test
 struct MockFuzzer;
@@ -33,7 +33,9 @@ fn test_runner_with_echo() {
 
     // Run the `run_with_input` directly for testing
     let input = "Hello, world!\n";
-    let result = runner.run_with_input(input).expect("Failed to run the program");
+    let result = runner
+        .run_with_input(input)
+        .expect("Failed to run the program");
 
     // Validate results
     println!("{}", result.exit_code);

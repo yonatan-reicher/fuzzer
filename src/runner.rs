@@ -1,5 +1,5 @@
-use std::{path::PathBuf, time::Duration};
 use crate::fuzzer::Fuzzer;
+use std::{path::PathBuf, time::Duration};
 
 #[derive(Debug)]
 pub struct ProgramResult {
