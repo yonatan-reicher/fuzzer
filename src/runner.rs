@@ -3,15 +3,15 @@ use std::{path::PathBuf, time::Duration};
 
 #[derive(Debug)]
 pub struct ProgramResult {
-    // TODO: We should use `Vec<u8>` instead to support non-UTF-8 IO.
-    pub stdout: String,
+    pub stdout: Vec<u8>,
     pub stderr: String,
     pub exit_code: i32,
 }
 
 pub trait Runner {
     fn run(&mut self);
-    fn run_with_input(&mut self, input: &str) -> Result<ProgramResult, String>;
+    // TODO: Remove this?
+    fn run_with_input(&mut self, input: &[u8]) -> Result<ProgramResult, String>;
 }
 
 #[allow(dead_code)]
@@ -40,10 +40,10 @@ impl<T: Fuzzer> Runner for DefaultRunner<T> {
         }
     }
 
-    fn run_with_input(&mut self, input: &str) -> Result<ProgramResult, String> {
+    fn run_with_input(&mut self, input: &[u8]) -> Result<ProgramResult, String> {
         // Placeholder for running the executable with input
         Ok(ProgramResult {
-            stdout: input.to_string(),
+            stdout: input.to_vec(),
             stderr: "".to_string(),
             exit_code: 0,
         })

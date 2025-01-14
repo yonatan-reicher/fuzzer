@@ -6,8 +6,8 @@ use std::time::Duration;
 struct MockFuzzer;
 
 impl Fuzzer for MockFuzzer {
-    fn generate_input(&mut self) -> String {
-        "Hello, world!\n".to_string()
+    fn generate_input(&mut self) -> Vec<u8> {
+        "Hello, world!\n".as_bytes().to_vec()
     }
 }
 
@@ -34,12 +34,12 @@ fn test_runner_with_echo() {
     // Run the `run_with_input` directly for testing
     let input = "Hello, world!\n";
     let result = runner
-        .run_with_input(input)
+        .run_with_input(input.as_bytes())
         .expect("Failed to run the program");
 
     // Validate results
     println!("{}", result.exit_code);
     assert_eq!(result.exit_code, 0, "Program did not exit with code 0");
-    assert_eq!(result.stdout.trim(), input.trim(), "Unexpected output");
+    assert_eq!(std::str::from_utf8(&result.stdout).unwrap().trim(), input.trim(), "Unexpected output");
     assert!(result.stderr.is_empty(), "Program wrote to stderr");
 }

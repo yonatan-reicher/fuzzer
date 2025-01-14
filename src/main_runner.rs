@@ -61,9 +61,9 @@ struct RunnerLoopAction<'path, 'fuzzer, Fuzzer> {
 
 impl<'p, 'f, F: Fuzzer> LoopAction for RunnerLoopAction<'p, 'f, F> {
     type Stop = Arc<SharedChild>;
-    type Wait = (Arc<SharedChild>, String);
+    type Wait = (Arc<SharedChild>, Vec<u8>);
 
-    type Output = String;
+    type Output = Vec<u8>;
 
     fn stop(child: &Self::Stop) {
         child.kill().expect("could not kill child process");
@@ -81,7 +81,7 @@ impl<'p, 'f, F: Fuzzer> LoopAction for RunnerLoopAction<'p, 'f, F> {
 
     fn start(&mut self) -> (Self::Stop, Self::Wait) {
         let input = self.fuzzer.generate_input();
-        let child = spawn_with_stdin(self.executable, input.as_bytes())
+        let child = spawn_with_stdin(self.executable, &input)
             .expect("could not spawn child process");
         let child = Arc::new(child);
         (child.clone(), (child, input))
@@ -105,7 +105,7 @@ impl<T: Fuzzer + Send> Runner for MainRunner<T> {
         }
     }
 
-    fn run_with_input(&mut self, _input: &str) -> Result<ProgramResult, String> {
+    fn run_with_input(&mut self, _input: &[u8]) -> Result<ProgramResult, String> {
         todo!()
     }
 }

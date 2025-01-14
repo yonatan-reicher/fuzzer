@@ -1,5 +1,6 @@
 use crate::Fuzzer;
 use crate::ALL_MUTATIONS;
+use rand::RngCore;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 
 #[derive(Debug, Default, Clone)]
@@ -38,7 +39,7 @@ thread_local! {
 }
 
 impl Fuzzer for MainFuzzer {
-    fn generate_input(&mut self) -> String {
+    fn generate_input(&mut self) -> Vec<u8> {
         match self.state {
             State::PredefinedInput(i) => {
                 let (output, reached_end) =
@@ -50,24 +51,21 @@ impl Fuzzer for MainFuzzer {
                 } else {
                     State::PredefinedInput(i + 1)
                 };
-                output.to_string()
+                output.as_bytes().to_vec()
             }
             State::Random {
                 ref mut random_state,
             } => {
                 let next: usize = random_state.gen_range(0..100);
-                // let mut ret = Vec::with_capacity(next);
-                // random_state.fill_bytes(&mut ret);
-                let mut ret = String::new();
-                for _ in 0..next {
-                    ret.push(random_state.gen_range(0..=255) as u8 as char);
-                }
+                let mut ret = vec![0; next];
+                random_state.fill_bytes(&mut ret);
                 ret
             }
             State::Mutation {
                 ref mut random_state,
                 ref mut seeds,
-            } => mutate_seeds(seeds, random_state),
+                // TODO: Make this a Vec<u8> instead of String
+            } => mutate_seeds(seeds, random_state).as_bytes().to_vec(),
         }
     }
 }
