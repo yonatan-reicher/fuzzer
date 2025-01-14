@@ -30,7 +30,11 @@ const BIG_LIST_OF_NAUGHTY_STRINGS: &str =
 
 thread_local! {
     static PREDEFINED_INPUT: Vec<&'static str> =
-        BIG_LIST_OF_NAUGHTY_STRINGS.split('\n').collect::<Vec<&str>>();
+        BIG_LIST_OF_NAUGHTY_STRINGS
+            .split('\n')
+            // Filter away empty lines and comments
+            .filter(|s| !s.is_empty() && !s.starts_with('#'))
+            .collect::<Vec<&str>>();
 }
 
 impl Fuzzer for MainFuzzer {
