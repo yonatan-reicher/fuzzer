@@ -1,7 +1,8 @@
 use crate::Fuzzer;
-use rand::RngCore;
-use rand::{rngs::SmallRng, Rng, SeedableRng};
 // use crate::ALL_MUTATIONS;
+use rand::seq::SliceRandom;
+use rand::{rngs::SmallRng, SeedableRng};
+use crate::random_strings;
 
 /// The fuzzer that generates random string input
 #[derive(Debug, Default, Clone)]
@@ -60,10 +61,7 @@ impl Fuzzer for MainFuzzer {
             State::Random {
                 ref mut random_state,
             } => {
-                let next: usize = random_state.gen_range(0..100);
-                let mut ret = vec![0; next];
-                random_state.fill_bytes(&mut ret);
-                ret
+                generate_random_input(random_state)
             }
             /*
             State::Mutation {
@@ -74,6 +72,26 @@ impl Fuzzer for MainFuzzer {
             */
         }
     }
+}
+
+const SHORT_STRING_GENERATOR: random_strings::Generator = |rng| random_strings::string(rng, 0, 10);
+const LONG_STRING_GENERATOR: random_strings::Generator = |rng| random_strings::string(rng, 10, 100);
+const VERY_LONG_STRING_GENERATOR: random_strings::Generator = |rng| random_strings::string(rng, 100, 10000);
+
+type Weight = u8;
+
+const GENERATORS: &[(Weight, random_strings::Generator)] = &[
+    (10, random_strings::i64_text),
+    (10, random_strings::i64_bytes),
+    (10, SHORT_STRING_GENERATOR),
+    (10, LONG_STRING_GENERATOR),
+    // Generating large strings is very slow
+    (1, VERY_LONG_STRING_GENERATOR),
+];
+
+fn generate_random_input(rng: &mut SmallRng) -> Vec<u8> {
+    let (_, generator) = GENERATORS.choose_weighted(rng, |(w, _)| *w).unwrap();
+    generator(rng)
 }
 
 /*
