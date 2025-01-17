@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use rand::rngs::SmallRng;
-use rand::{Rng, SeedableRng};
+use rand::Rng;
 use rand::prelude::SliceRandom;
 
 pub trait FuzzingMutation<T> {
