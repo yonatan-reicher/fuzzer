@@ -1,7 +1,7 @@
 use crate::Fuzzer;
-use crate::ALL_MUTATIONS;
 use rand::RngCore;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
+// use crate::ALL_MUTATIONS;
 
 /// The fuzzer that generates random string input
 #[derive(Debug, Default, Clone)]
@@ -16,10 +16,12 @@ enum State {
     PredefinedInput(usize),
     /// This state generates random input from the random input generators.
     Random { random_state: SmallRng },
+    /*
     Mutation {
         random_state: SmallRng,
         seeds: Vec<String>,
     },
+    */
 }
 
 impl Default for State {
@@ -63,15 +65,18 @@ impl Fuzzer for MainFuzzer {
                 random_state.fill_bytes(&mut ret);
                 ret
             }
+            /*
             State::Mutation {
                 ref mut random_state,
                 ref mut seeds,
                 // TODO: Make this a Vec<u8> instead of String
             } => mutate_seeds(seeds, random_state).as_bytes().to_vec(),
+            */
         }
     }
 }
 
+/*
 pub fn mutate_seeds(seeds: &mut Vec<String>, random_state: &mut SmallRng) -> String {
     seeds.iter_mut().for_each(|seed| {
         let mutation_index = random_state.gen_range(0..ALL_MUTATIONS.len());
@@ -80,6 +85,7 @@ pub fn mutate_seeds(seeds: &mut Vec<String>, random_state: &mut SmallRng) -> Str
 
     seeds.join("\n")
 }
+*/
 
 #[cfg(test)]
 mod tests {
