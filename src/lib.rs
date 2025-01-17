@@ -4,6 +4,7 @@ mod main_runner;
 mod mutations;
 pub mod runner;
 mod stoppable_loop;
+mod random_strings;
 
 // Re-export commonly used types and functions
 pub use fuzzer::Fuzzer;
