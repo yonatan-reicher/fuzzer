@@ -3,17 +3,19 @@ use crate::ALL_MUTATIONS;
 use rand::RngCore;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 
+/// The fuzzer that generates random string input
 #[derive(Debug, Default, Clone)]
 pub struct MainFuzzer {
     state: State,
 }
 
+/// The current state of the fuzzer
 #[derive(Debug, Clone)]
 enum State {
+    /// This state sequentially yields the input from our big naughty strings list.
     PredefinedInput(usize),
-    Random {
-        random_state: SmallRng,
-    },
+    /// This state generates random input from the random input generators.
+    Random { random_state: SmallRng },
     Mutation {
         random_state: SmallRng,
         seeds: Vec<String>,
