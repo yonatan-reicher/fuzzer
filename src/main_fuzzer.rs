@@ -95,7 +95,7 @@ mod tests {
     fn fuzzer_moves_to_next_state() {
         let mut fuzz = MainFuzzer::default();
         let n = PREDEFINED_INPUT.with(|input| input.len());
-        for i in 0..n {
+        for _ in 0..n {
             fuzz.generate_input();
         }
         assert!(std::matches!(fuzz.state, State::Random { .. }));
