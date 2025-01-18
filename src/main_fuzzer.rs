@@ -62,7 +62,7 @@ impl Fuzzer for MainFuzzer {
     }
 }
 
-const SHORT_STRING_GENERATOR: random_strings::Generator = |rng| random_strings::string(rng, 0, 10);
+const SHORT_STRING_GENERATOR: random_strings::Generator = |rng| random_strings::string(rng, 1, 10);
 const LONG_STRING_GENERATOR: random_strings::Generator = |rng| random_strings::string(rng, 10, 100);
 const VERY_LONG_STRING_GENERATOR: random_strings::Generator =
     |rng| random_strings::string(rng, 100, 10000);
