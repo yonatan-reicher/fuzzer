@@ -23,7 +23,7 @@ pub trait LoopAction {
 
     fn stop(stop: &Self::Stop);
 
-    fn wait(wait: Self::Wait) -> Option<Self::Output>;
+    fn wait(&mut self, wait: Self::Wait) -> Option<Self::Output>;
 
     fn start(&mut self) -> (Self::Stop, Self::Wait);
 }
@@ -73,7 +73,7 @@ impl<A: LoopAction> StoppableLoop<A> {
                 return None;
             };
 
-            let output = A::wait(wait);
+            let output = self.action.wait(wait);
             if self.state.lock().unwrap().is_stopped() {
                 return None;
             }
@@ -101,7 +101,7 @@ mod tests {
 
         fn stop(_: &Self::Stop) {}
 
-        fn wait(_: Self::Wait) -> Option<Self::Output> {
+        fn wait(&mut self, _: Self::Wait) -> Option<Self::Output> {
             Some(42)
         }
     }
@@ -132,7 +132,7 @@ mod tests {
             cvar.notify_all();
         }
 
-        fn wait(wait: Self::Wait) -> Option<Self::Output> {
+        fn wait(&mut self, wait: Self::Wait) -> Option<Self::Output> {
             let (lock, cvar) = &*wait;
             let mut stopped = lock.lock().unwrap();
             // Get stuck until the loop is stopped.
