@@ -1,8 +1,8 @@
 use crate::Fuzzer;
 // use crate::ALL_MUTATIONS;
+use crate::random_strings;
 use rand::seq::SliceRandom;
 use rand::{rngs::SmallRng, SeedableRng};
-use crate::random_strings;
 
 /// The fuzzer that generates random string input
 #[derive(Debug, Default, Clone)]
@@ -60,9 +60,7 @@ impl Fuzzer for MainFuzzer {
             }
             State::Random {
                 ref mut random_state,
-            } => {
-                generate_random_input(random_state)
-            }
+            } => generate_random_input(random_state), 
             /*
             State::Mutation {
                 ref mut random_state,
@@ -76,7 +74,8 @@ impl Fuzzer for MainFuzzer {
 
 const SHORT_STRING_GENERATOR: random_strings::Generator = |rng| random_strings::string(rng, 0, 10);
 const LONG_STRING_GENERATOR: random_strings::Generator = |rng| random_strings::string(rng, 10, 100);
-const VERY_LONG_STRING_GENERATOR: random_strings::Generator = |rng| random_strings::string(rng, 100, 10000);
+const VERY_LONG_STRING_GENERATOR: random_strings::Generator =
+    |rng| random_strings::string(rng, 100, 10000);
 
 type Weight = u8;
 
