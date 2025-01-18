@@ -4,6 +4,8 @@ use crate::random_strings;
 use rand::seq::SliceRandom;
 use rand::{rngs::SmallRng, SeedableRng};
 
+mod predefined_inputs;
+
 /// The fuzzer that generates random string input
 #[derive(Debug, Default, Clone)]
 pub struct MainFuzzer {
@@ -31,45 +33,12 @@ impl Default for State {
     }
 }
 
-const OUR_BAD_INPUTS: &[&[u8]] = &[
-    &[],
-    &[0],
-    &[1],
-    // Hello\0World!
-    &[72, 101, 108, 108, 111, 0, 87, 111, 114, 108, 100, 33],
-    // Hello\nWorld!
-    &[72, 101, 108, 108, 111, 10, 87, 111, 114, 108, 100, 33],
-];
-
-fn our_bad_inputs() -> impl Iterator<Item = &'static [u8]> {
-    OUR_BAD_INPUTS.iter().cloned()
-}
-
-const BIG_LIST_OF_NAUGHTY_STRINGS: &str =
-    include_str!("../resources/big-list-of-naughty-strings.txt");
-
-fn naughty_strings_filtered() -> impl Iterator<Item = &'static str> {
-    BIG_LIST_OF_NAUGHTY_STRINGS
-        .split('\n')
-        // Filter away empty lines and comments
-        .filter(|s| !s.is_empty() && !s.starts_with('#'))
-}
-
-fn naughty_strings_final() -> impl Iterator<Item = &'static [u8]> {
-    naughty_strings_filtered().map(|s| s.as_bytes())
-}
-
-thread_local! {
-    static PREDEFINED_INPUT: Vec<&'static [u8]> =
-        our_bad_inputs().chain(naughty_strings_final()).collect();
-}
-
 impl Fuzzer for MainFuzzer {
     fn generate_input(&mut self) -> Vec<u8> {
         match self.state {
             State::PredefinedInput(i) => {
                 let (output, reached_end) =
-                    PREDEFINED_INPUT.with(|input| (input[i], i + 1 >= input.len()));
+                    predefined_inputs::get(|input| (input[i], i + 1 >= input.len()));
                 self.state = if reached_end {
                     State::Random {
                         random_state: SmallRng::from_entropy(),
@@ -132,10 +101,8 @@ mod tests {
     #[test]
     fn fuzzer_moves_to_next_state() {
         let mut fuzz = MainFuzzer::default();
-        let n = PREDEFINED_INPUT.with(|input| input.len());
-        for _ in 0..n {
-            fuzz.generate_input();
-        }
+        let n = predefined_inputs::get(|input| input.len());
+        for _ in 0..n { fuzz.generate_input(); }
         assert!(std::matches!(fuzz.state, State::Random { .. }));
     }
 
