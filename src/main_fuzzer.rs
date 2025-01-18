@@ -31,16 +31,37 @@ impl Default for State {
     }
 }
 
+const OUR_BAD_INPUTS: &[&[u8]] = &[
+    &[],
+    &[0],
+    &[1],
+    // Hello\0World!
+    &[72, 101, 108, 108, 111, 0, 87, 111, 114, 108, 100, 33],
+    // Hello\nWorld!
+    &[72, 101, 108, 108, 111, 10, 87, 111, 114, 108, 100, 33],
+];
+
+fn our_bad_inputs() -> impl Iterator<Item = &'static [u8]> {
+    OUR_BAD_INPUTS.iter().cloned()
+}
+
 const BIG_LIST_OF_NAUGHTY_STRINGS: &str =
     include_str!("../resources/big-list-of-naughty-strings.txt");
 
+fn naughty_strings_filtered() -> impl Iterator<Item = &'static str> {
+    BIG_LIST_OF_NAUGHTY_STRINGS
+        .split('\n')
+        // Filter away empty lines and comments
+        .filter(|s| !s.is_empty() && !s.starts_with('#'))
+}
+
+fn naughty_strings_final() -> impl Iterator<Item = &'static [u8]> {
+    naughty_strings_filtered().map(|s| s.as_bytes())
+}
+
 thread_local! {
-    static PREDEFINED_INPUT: Vec<&'static str> =
-        BIG_LIST_OF_NAUGHTY_STRINGS
-            .split('\n')
-            // Filter away empty lines and comments
-            .filter(|s| !s.is_empty() && !s.starts_with('#'))
-            .collect::<Vec<&str>>();
+    static PREDEFINED_INPUT: Vec<&'static [u8]> =
+        our_bad_inputs().chain(naughty_strings_final()).collect();
 }
 
 impl Fuzzer for MainFuzzer {
@@ -56,7 +77,7 @@ impl Fuzzer for MainFuzzer {
                 } else {
                     State::PredefinedInput(i + 1)
                 };
-                output.as_bytes().to_vec()
+                output.to_vec()
             }
             State::Random {
                 ref mut random_state,
