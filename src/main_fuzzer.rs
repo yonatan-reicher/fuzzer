@@ -62,25 +62,21 @@ impl Fuzzer for MainFuzzer {
     }
 }
 
-const SHORT_STRING_GENERATOR: random_strings::Generator = |rng| random_strings::string(rng, 1, 10);
-const LONG_STRING_GENERATOR: random_strings::Generator = |rng| random_strings::string(rng, 10, 100);
-const VERY_LONG_STRING_GENERATOR: random_strings::Generator =
-    |rng| random_strings::string(rng, 100, 10000);
+const SHORT_STRING_GENERATOR: random_strings::Generator = random_strings::string::<1, 10>();
+const LONG_STRING_GENERATOR: random_strings::Generator = random_strings::string::<10, 100>();
+const VERY_LONG_STRING_GENERATOR: random_strings::Generator = random_strings::string::<100, 1000>();
 
-type Weight = u8;
-
-const GENERATORS: &[(Weight, random_strings::Generator)] = &[
-    (10, random_strings::i64_text),
-    (10, random_strings::i64_bytes),
+const FINAL_GENERATOR: random_strings::Generator = random_strings::any! {
+    (10, random_strings::i64_text()),
+    (10, random_strings::i64_bytes()),
     (10, SHORT_STRING_GENERATOR),
     (10, LONG_STRING_GENERATOR),
-    // Generating large strings is very slow
+    // Generating large strings is very slow, so the weight is lower
     (1, VERY_LONG_STRING_GENERATOR),
-];
+};
 
 fn generate_random_input(rng: &mut SmallRng) -> Vec<u8> {
-    let (_, generator) = GENERATORS.choose_weighted(rng, |(w, _)| *w).unwrap();
-    generator(rng)
+    FINAL_GENERATOR.generate(rng)
 }
 
 /*
