@@ -58,12 +58,35 @@ pub const fn string<const MIN_LENGTH: usize, const MAX_LENGTH: usize>() -> Gener
     })
 }
 
+pub const fn ascii<const MIN_LENGTH: usize, const MAX_LENGTH: usize>() -> Generator {
+    Generator::from_fn(|rand| {
+        let len = rand.gen_range(MIN_LENGTH..MAX_LENGTH);
+        let mut ret = Vec::with_capacity(len);
+        for _ in 0..len {
+            ret.push(rand.gen_range(32..127));
+        }
+        ret
+    })
+}
+
+#[macro_export]
+macro_rules! choose_string {
+    ($($string:expr),* $(,)?) => {
+        $crate::random_strings::Generator::from_fn(|rand| {
+            let strings = &[$($string),*];
+            let (_, string) = strings.choose_weighted(rand, |(w, _)| *w).unwrap();
+            string.as_bytes().to_vec()
+        })
+    };
+}
+pub use choose_string;
+
 pub const fn empty() -> Generator {
     Generator::from_fn(|_| Vec::new())
 }
 
 #[macro_export]
-macro_rules! any {
+macro_rules! choose_generator {
     ($($generator:expr),* $(,)?) => {
         $crate::random_strings::Generator::from_fn(|rand| {
             let generators = &[$($generator),*];
@@ -72,14 +95,14 @@ macro_rules! any {
         })
     };
 }
-pub use any;
+pub use choose_generator;
 
 #[macro_export]
 macro_rules! then {
     ($first:expr, $second:expr $(,)?) => {
         $crate::random_strings::Generator::from_fn(move |rand| {
             let mut ret = $first.generate(rand);
-            ret.extend($second(rand));
+            ret.extend($second.generate(rand));
             ret
         })
     };
@@ -105,3 +128,19 @@ macro_rules! chain {
     };
 }
 pub use chain;
+
+#[macro_export]
+macro_rules! repeat {
+    ($min:literal .. $max:literal, $generator:expr $(,)?) => {
+        $crate::random_strings::Generator::from_fn(|rand| {
+            use rand::Rng;
+            let amount = rand.gen_range($min..$max);
+            let mut ret = Vec::new();
+            for _ in 0..amount {
+                ret.extend($generator.generate(rand));
+            }
+            ret
+        })
+    };
+}
+pub use repeat;

@@ -65,14 +65,41 @@ impl Fuzzer for MainFuzzer {
 const SHORT_STRING_GENERATOR: random_strings::Generator = random_strings::string::<1, 10>();
 const LONG_STRING_GENERATOR: random_strings::Generator = random_strings::string::<10, 100>();
 const VERY_LONG_STRING_GENERATOR: random_strings::Generator = random_strings::string::<100, 1000>();
+const SHORT_ASCII_GENERATOR: random_strings::Generator = random_strings::ascii::<1, 10>();
+const LONG_ASCII_GENERATOR: random_strings::Generator = random_strings::ascii::<10, 100>();
+const VERY_LONG_ASCII_GENERATOR: random_strings::Generator = random_strings::ascii::<100, 1000>();
 
-const FINAL_GENERATOR: random_strings::Generator = random_strings::any! {
+const WORD_GENERATOR: random_strings::Generator = random_strings::choose_generator! {
     (10, random_strings::i64_text()),
     (10, random_strings::i64_bytes()),
     (10, SHORT_STRING_GENERATOR),
+    (10, SHORT_ASCII_GENERATOR),
     (10, LONG_STRING_GENERATOR),
+    (10, LONG_ASCII_GENERATOR),
     // Generating large strings is very slow, so the weight is lower
     (1, VERY_LONG_STRING_GENERATOR),
+    (1, VERY_LONG_ASCII_GENERATOR),
+};
+
+const SEPERATOR_GENERATOR: random_strings::Generator = random_strings::choose_string! {
+    (1, "\n"),
+    (1, "\r\n"),
+    (1, "\r"),
+    (1, ""),
+    (1, " "),
+};
+
+const SHORT_SENTENCE_GENERATOR: random_strings::Generator = random_strings::repeat!(2..4, {
+    random_strings::then!(WORD_GENERATOR, SEPERATOR_GENERATOR)
+});
+const LONG_SENTENCE_GENERATOR: random_strings::Generator = random_strings::repeat!(4..10, {
+    random_strings::then!(WORD_GENERATOR, SEPERATOR_GENERATOR)
+});
+
+const FINAL_GENERATOR: random_strings::Generator = random_strings::choose_generator! {
+    (1, SHORT_SENTENCE_GENERATOR),
+    (1, LONG_SENTENCE_GENERATOR),
+    (1, WORD_GENERATOR),
 };
 
 fn generate_random_input(rng: &mut SmallRng) -> Vec<u8> {
