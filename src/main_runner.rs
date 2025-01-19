@@ -117,12 +117,8 @@ fn kill_after_timeout(
     on_killed: impl FnOnce() + Send + 'static,
 ) {
     delay(duration, move || {
-        let exit_status = child.try_wait().expect("could not wait for child process");
-        let is_alive = exit_status.is_none();
-        if is_alive {
-            child.kill().expect("could not kill child process");
-            on_killed();
-        }
+        child.kill().expect("could not kill child process");
+        on_killed();
     });
 }
 
