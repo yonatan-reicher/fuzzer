@@ -2,7 +2,6 @@ use crate::fuzzer::Fuzzer;
 use crate::runner::{ProgramResult, Runner};
 use crate::stoppable_loop::{LoopAction, StoppableLoop};
 use shared_child::SharedChild;
-use std::thread;
 use std::{
     fmt::{self, Display, Formatter},
     io::{self, Write},
@@ -11,7 +10,7 @@ use std::{
     time::Duration,
 };
 use crate::flag::Flag;
-use crate::delay::delay;
+use crate::delay::{delay, Delayer, cancelable_delay};
 
 
 const SINGLE_EXECUTION_TIMEOUT_SECS: f32 = 1.5;
@@ -32,6 +31,7 @@ struct RunnerLoopAction<'path, 'fuzzer, Fuzzer> {
     fuzzer: &'fuzzer mut Fuzzer,
     executable: &'path Path,
     single_execution_timeout: Duration,
+    delayer: Delayer<Box<dyn FnOnce() + Send + 'static>>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -80,7 +80,7 @@ fn wait<F>(
     child: Arc<SharedChild>,
     input: Vec<u8>,
 ) -> Option<Vec<u8>> {
-    match wait_with_timeout(child.clone(), runner.single_execution_timeout) {
+    match wait_with_timeout(child.clone(), runner.single_execution_timeout, &runner.delayer) {
         WaitWithTimeoutResult::Timeout => None,
         WaitWithTimeoutResult::Finished(exit_status) => {
             if exit_status.success() {
@@ -96,30 +96,30 @@ fn wait<F>(
 
 
 
-fn wait_with_timeout(child: Arc<SharedChild>, timeout: Duration) -> WaitWithTimeoutResult {
+fn wait_with_timeout(
+    child: Arc<SharedChild>,
+    timeout: Duration,
+    delayer: &Delayer<Box<dyn FnOnce() + Send + 'static>>,
+) -> WaitWithTimeoutResult {
     let was_killed = Flag::default();
-    kill_after_timeout(child.clone(), timeout, was_killed.get_raise());
+
+    // Kill the child process after the timeout
+    {
+        let raise_was_killed = was_killed.get_raise();
+        let child = child.clone();
+        delayer.set(timeout, Box::new(move || {
+            raise_was_killed();
+            child.kill().expect("could not kill child process");
+        }));
+    }
+
     let exit_status = child.wait().expect("could not wait for child process");
+    delayer.cancel();
     if was_killed.is_raised() {
         WaitWithTimeoutResult::Timeout
     } else {
         WaitWithTimeoutResult::Finished(exit_status)
     }
-}
-
-fn kill_after_timeout(
-    child: Arc<SharedChild>,
-    duration: Duration,
-    on_killed: impl FnOnce() + Send + 'static,
-) {
-    delay(duration, move || {
-        let exit_status = child.try_wait().expect("could not wait for child process");
-        let is_alive = exit_status.is_none();
-        if is_alive {
-            child.kill().expect("could not kill child process");
-            on_killed();
-        }
-    })
 }
 
 impl<'p, 'f, F: Fuzzer> LoopAction for RunnerLoopAction<'p, 'f, F> {
@@ -164,6 +164,7 @@ impl<T: Fuzzer + Send> Runner for MainRunner<T> {
             fuzzer: &mut self.fuzzer,
             executable: &self.executable,
             single_execution_timeout: self.single_execution_timeout,
+            delayer: Delayer::new(),
         });
 
         let stop = searcher.get_stop();
@@ -181,42 +182,5 @@ impl<T: Fuzzer + Send> Runner for MainRunner<T> {
 
     fn run_with_input(&mut self, _input: &[u8]) -> Result<ProgramResult, String> {
         todo!()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_kill_after_timeout_kills_after_timeout() {
-        let start = std::time::Instant::now();
-        let child = Arc::new(SharedChild::spawn(std::process::Command::new("sleep").arg("10000")).unwrap());
-        let was_killed = Flag::default();
-        kill_after_timeout(child.clone(), Duration::from_millis(100), was_killed.get_raise());
-        let exit_status = child.wait().unwrap();
-        let elapsed = start.elapsed();
-        let was_killed = was_killed.is_raised();
-        println!("Elapsed: {:?}", elapsed);
-        let max_error = 30;
-        assert!(elapsed < Duration::from_millis(100 + max_error));
-        assert!(!exit_status.success());
-        assert!(was_killed);
-    }
-
-    #[test]
-    fn test_kill_after_timeout_kills_doesnt_kill_before_timeout() {
-        let duration = Duration::from_millis(100);
-        let start = std::time::Instant::now();
-        let child = Arc::new(SharedChild::spawn(&mut std::process::Command::new("echo")).unwrap());
-        let was_killed = Flag::default();
-        kill_after_timeout(child.clone(), duration, was_killed.get_raise());
-        let exit_status = child.wait().unwrap();
-        let elapsed = start.elapsed();
-        let was_killed = was_killed.is_raised();
-        println!("Elapsed: {:?}", elapsed);
-        assert!(elapsed < duration);
-        assert!(exit_status.success());
-        assert!(!was_killed);
     }
 }
