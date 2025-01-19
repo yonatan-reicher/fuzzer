@@ -6,6 +6,7 @@ mod stoppable_loop;
 mod random_strings;
 mod flag;
 mod random_urls;
+mod delay;
 
 // Re-export commonly used types and functions
 pub use fuzzer::Fuzzer;

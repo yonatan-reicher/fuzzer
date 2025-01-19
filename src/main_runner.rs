@@ -11,6 +11,7 @@ use std::{
     time::Duration,
 };
 use crate::flag::Flag;
+use crate::delay::delay;
 
 
 const SINGLE_EXECUTION_TIMEOUT_SECS: f32 = 1.5;
@@ -70,15 +71,6 @@ fn spawn_with_stdin(executable: &Path, input: &[u8]) -> io::Result<SharedChild> 
     Ok(child)
 }
 
-fn delay(delay: Duration, action: impl FnOnce() + Send + 'static) {
-    thread::spawn(move || {
-        thread::sleep(delay);
-        action();
-    });
-}
-
-
-
 fn stop(child: &Arc<SharedChild>) {
     child.kill().expect("could not kill child process");
 }
@@ -121,9 +113,13 @@ fn kill_after_timeout(
     on_killed: impl FnOnce() + Send + 'static,
 ) {
     delay(duration, move || {
-        child.kill().expect("could not kill child process");
-        on_killed();
-    });
+        let exit_status = child.try_wait().expect("could not wait for child process");
+        let is_alive = exit_status.is_none();
+        if is_alive {
+            child.kill().expect("could not kill child process");
+            on_killed();
+        }
+    })
 }
 
 impl<'p, 'f, F: Fuzzer> LoopAction for RunnerLoopAction<'p, 'f, F> {
