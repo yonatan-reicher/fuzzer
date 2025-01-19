@@ -2,6 +2,8 @@ FROM rust:latest as rust-env
 
 # Install Python alongside Rust
 RUN apt-get update && apt-get install -y python3 python3-pip
+# I need vim...
+RUN apt-get install -y vim
 
 # Add a non-root user for safety
 RUN useradd -ms /bin/bash sandboxuser
