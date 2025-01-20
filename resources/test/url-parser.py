@@ -1,3 +1,4 @@
+#!python3
 '''
 This is a URL parser to test our URL fuzzer!
 
