@@ -1,4 +1,4 @@
-#!python3
+#!/usr/bin/env python3
 '''
 This is a URL parser to test our URL fuzzer!
 
