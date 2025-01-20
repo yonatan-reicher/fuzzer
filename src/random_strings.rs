@@ -18,20 +18,27 @@ impl Generator {
     }
 }
 
-const I64_MAX_DIGITS: u32 = 20;
-
-fn random_amount_of_digits_i64(rand: &mut SmallRng) -> u32 {
-    // Start from 2 so we don't get biased towards small numbers (there are
-    // less small numbers than big numbers)
-    rand.gen_range(2..=I64_MAX_DIGITS)
+fn my_random_i64(rand: &mut SmallRng) -> i64 {
+    let u64 = rand.next_u64();
+    let bits_to_cut_off = rand.gen_range(1..=61);
+    // Only cut up to 61 bits off, so we don't get too many small numbers.
+    // Always cut at least 1 bit off, so when we transmute, we always get a
+    // positive number.
+    let ret_non_negative = u64 >> bits_to_cut_off;
+    let ret_non_negative: i64 = unsafe { std::mem::transmute(ret_non_negative) };
+    // Now randomize the sign
+    let random_bool = u64 & 1 != 0; // Use the bit we always throw away!
+    if random_bool {
+        ret_non_negative
+    } else {
+        -ret_non_negative
+    }
 }
 
 /// Generate random data that is valid i64 text
 pub const fn i64_text() -> Generator {
     Generator::from_fn(|rand| {
-        let digits = random_amount_of_digits_i64(rand);
-        let u64 = rand.next_u64() % 10u64.pow(digits);
-        let i64: i64 = unsafe { std::mem::transmute(u64) }; // Best way I could think to do this
+        let i64 = my_random_i64(rand);
         i64.to_string().as_bytes().to_vec()
     })
 }
@@ -39,9 +46,7 @@ pub const fn i64_text() -> Generator {
 /// Generate random data that is valid i64 binary encoding
 pub const fn i64_bytes() -> Generator {
     Generator::from_fn(|rand| {
-        let digits = random_amount_of_digits_i64(rand);
-        let u64 = rand.next_u64() % 10u64.pow(digits);
-        let i64: i64 = unsafe { std::mem::transmute(u64) }; // Best way I could think to do this
+        let i64 = my_random_i64(rand);
         i64.to_be_bytes().to_vec()
     })
 }
