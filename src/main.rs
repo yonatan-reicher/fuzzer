@@ -1,23 +1,7 @@
-use fuzzer::{MainFuzzer, MainRunner, Runner};
+use fuzzer::{FuzzingMode, MainFuzzer, MainRunner, Runner};
 use std::path::PathBuf;
 use std::process;
 use std::{env, time::Duration};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum FuzzingMode {
-    Strings,
-    Urls,
-}
-
-impl FuzzingMode {
-    fn from_arg(arg: &str) -> Result<Self, String> {
-        match arg {
-            "--strings" => Ok(FuzzingMode::Strings),
-            "--urls" => Ok(FuzzingMode::Urls),
-            _ => Err(format!("Invalid option: {}. Use --strings or --urls.", arg)),
-        }
-    }
-}
 
 fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
@@ -40,6 +24,9 @@ fn main() -> Result<(), String> {
 
     println!("Fuzzing mode: {:?}", mode);
     println!("Target executable: {:?}", executable);
+
+    let fuzzer = MainFuzzer::new(mode);
+    
 
     let mut runner = MainRunner::new(
         executable,

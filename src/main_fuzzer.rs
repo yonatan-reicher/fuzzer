@@ -1,14 +1,30 @@
-use crate::Fuzzer;
 use crate::random_strings;
+use crate::Fuzzer;
 use rand::seq::SliceRandom;
 use rand::{rngs::SmallRng, SeedableRng};
 
 mod predefined_inputs;
 
-/// The fuzzer that generates random string input
-#[derive(Debug, Default, Clone)]
-pub struct MainFuzzer {
-    state: State,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum FuzzingMode {
+    Strings,
+    Urls,
+}
+
+impl FuzzingMode {
+    pub fn from_arg(arg: &str) -> Result<Self, String> {
+        match arg {
+            "--strings" => Ok(FuzzingMode::Strings),
+            "--urls" => Ok(FuzzingMode::Urls),
+            _ => Err(format!("Invalid option: {}. Use --strings or --urls.", arg)),
+        }
+    }
+}
+
+impl Default for FuzzingMode {
+    fn default() -> Self {
+        FuzzingMode::Strings
+    }
 }
 
 /// The current state of the fuzzer
@@ -26,8 +42,21 @@ impl Default for State {
     }
 }
 
-impl Fuzzer for MainFuzzer {
-    fn generate_input(&mut self) -> Vec<u8> {
+/// The fuzzer that generates random string input
+#[derive(Debug, Default, Clone)]
+pub struct MainFuzzer {
+    state: State,
+    mode: FuzzingMode,
+}
+impl MainFuzzer {
+    pub fn new(mode: FuzzingMode) -> Self {
+        Self {
+            state: State::default(),
+            mode,
+        }
+    }
+
+    fn generate_string_input(&mut self) -> Vec<u8> {
         match self.state {
             State::PredefinedInput(i) => {
                 let (output, reached_end) =
@@ -43,24 +72,32 @@ impl Fuzzer for MainFuzzer {
             }
             State::Random {
                 ref mut random_state,
-            } => generate_random_input(random_state), 
-            /*
-            State::Mutation {
-                ref mut random_state,
-                ref mut seeds,
-                // TODO: Make this a Vec<u8> instead of String
-            } => mutate_seeds(seeds, random_state).as_bytes().to_vec(),
-            */
+            } => generate_random_input(random_state),
+        }
+    }
+    
+    fn generate_url_input(&mut self) -> Vec<u8> { 
+        vec![]
+    }
+}
+
+impl Fuzzer for MainFuzzer {
+    fn generate_input(&mut self) -> Vec<u8> {
+        match self.mode {
+            FuzzingMode::Strings => self.generate_string_input(),
+            FuzzingMode::Urls => {self.generate_url_input()}
         }
     }
 }
 
 const SHORT_STRING_GENERATOR: random_strings::ByteGenerator = random_strings::string::<1, 10>();
 const LONG_STRING_GENERATOR: random_strings::ByteGenerator = random_strings::string::<10, 100>();
-const VERY_LONG_STRING_GENERATOR: random_strings::ByteGenerator = random_strings::string::<100, 1000>();
+const VERY_LONG_STRING_GENERATOR: random_strings::ByteGenerator =
+    random_strings::string::<100, 1000>();
 const SHORT_ASCII_GENERATOR: random_strings::ByteGenerator = random_strings::ascii::<1, 10>();
 const LONG_ASCII_GENERATOR: random_strings::ByteGenerator = random_strings::ascii::<10, 100>();
-const VERY_LONG_ASCII_GENERATOR: random_strings::ByteGenerator = random_strings::ascii::<100, 1000>();
+const VERY_LONG_ASCII_GENERATOR: random_strings::ByteGenerator =
+    random_strings::ascii::<100, 1000>();
 
 const WORD_GENERATOR: random_strings::ByteGenerator = random_strings::choose_generator! {
     (10, random_strings::i64_text()),
@@ -107,7 +144,9 @@ mod tests {
     fn fuzzer_moves_to_next_state() {
         let mut fuzz = MainFuzzer::default();
         let n = predefined_inputs::get(|input| input.len());
-        for _ in 0..n { fuzz.generate_input(); }
+        for _ in 0..n {
+            fuzz.generate_input();
+        }
         assert!(std::matches!(fuzz.state, State::Random { .. }));
     }
 

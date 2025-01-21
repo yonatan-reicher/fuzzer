@@ -9,6 +9,6 @@ mod random_urls;
 
 // Re-export commonly used types and functions
 pub use fuzzer::Fuzzer;
-pub use main_fuzzer::MainFuzzer;
+pub use main_fuzzer::{MainFuzzer, FuzzingMode};
 pub use main_runner::MainRunner;
 pub use runner::{DefaultRunner, ProgramResult, Runner};
