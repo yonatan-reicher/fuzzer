@@ -5,6 +5,7 @@ pub mod runner;
 mod stoppable_loop;
 mod random_strings;
 mod flag;
+mod random_urls;
 
 // Re-export commonly used types and functions
 pub use fuzzer::Fuzzer;

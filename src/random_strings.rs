@@ -107,7 +107,7 @@ pub use choose_generator;
 #[macro_export]
 macro_rules! then {
     ($first:expr, $second:expr $(,)?) => {
-        $crate::random_strings::ByteGenerator::from_fn(move |rand| {
+        $crate::random_strings::Generator::from_fn(move |rand| {
             let mut ret = $first.generate(rand);
             ret.extend($second.generate(rand));
             ret
@@ -136,10 +136,11 @@ macro_rules! chain {
 }
 pub use chain;
 
+
 #[macro_export]
 macro_rules! repeat {
     ($min:literal .. $max:literal, $generator:expr $(,)?) => {
-        $crate::random_strings::ByteGenerator::from_fn(|rand| {
+        $crate::random_strings::Generator::from_fn(|rand| {
             use rand::Rng;
             let amount = rand.gen_range($min..$max);
             let mut ret = Vec::new();
