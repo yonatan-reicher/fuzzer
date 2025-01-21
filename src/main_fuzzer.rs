@@ -1,5 +1,4 @@
 use crate::Fuzzer;
-// use crate::ALL_MUTATIONS;
 use crate::random_strings;
 use rand::seq::SliceRandom;
 use rand::{rngs::SmallRng, SeedableRng};
@@ -19,12 +18,6 @@ enum State {
     PredefinedInput(usize),
     /// This state generates random input from the random input generators.
     Random { random_state: SmallRng },
-    /*
-    Mutation {
-        random_state: SmallRng,
-        seeds: Vec<String>,
-    },
-    */
 }
 
 impl Default for State {
@@ -105,17 +98,6 @@ const FINAL_GENERATOR: random_strings::ByteGenerator = random_strings::choose_ge
 fn generate_random_input(rng: &mut SmallRng) -> Vec<u8> {
     FINAL_GENERATOR.generate(rng)
 }
-
-/*
-pub fn mutate_seeds(seeds: &mut Vec<String>, random_state: &mut SmallRng) -> String {
-    seeds.iter_mut().for_each(|seed| {
-        let mutation_index = random_state.gen_range(0..ALL_MUTATIONS.len());
-        ALL_MUTATIONS[mutation_index].apply(seed, random_state);
-    });
-
-    seeds.join("\n")
-}
-*/
 
 #[cfg(test)]
 mod tests {
