@@ -77,6 +77,7 @@ impl MainFuzzer {
     }
     
     fn generate_url_input(&mut self) -> Vec<u8> { 
+        //TODO: Add url input generation loop
         vec![]
     }
 }
