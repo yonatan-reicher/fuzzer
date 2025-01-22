@@ -32,7 +32,7 @@ fn main() -> Result<(), String> {
         executable,
         // TODO: Get from CLI?
         Duration::from_secs(5),
-        MainFuzzer::default(),
+        fuzzer
     );
     runner.run();
     // TODO: Report Metrics

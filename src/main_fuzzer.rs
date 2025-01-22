@@ -2,7 +2,7 @@ use crate::random_strings;
 use crate::Fuzzer;
 use rand::seq::SliceRandom;
 use rand::{rngs::SmallRng, SeedableRng};
-
+use crate::random_urls;
 mod predefined_inputs;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -76,9 +76,24 @@ impl MainFuzzer {
         }
     }
     
-    fn generate_url_input(&mut self) -> Vec<u8> { 
-        //TODO: Add url input generation loop
-        vec![]
+    fn generate_url_input(&mut self) -> Vec<u8> {
+        match self.state {
+            State::PredefinedInput(i) => {
+                let (output, reached_end) =
+                    predefined_inputs::get(|input| (input[i], i + 1 >= input.len()));
+                self.state = if reached_end {
+                    State::Random {
+                        random_state: SmallRng::from_entropy(),
+                    }
+                } else {
+                    State::PredefinedInput(i + 1)
+                };
+                output.to_vec()
+            }
+            State::Random {
+                ref mut random_state,
+            } => random_urls::generate_random_url_input(random_state),
+        }
     }
 }
 

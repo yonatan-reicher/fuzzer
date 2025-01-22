@@ -100,6 +100,6 @@ pub const URL_GENERATOR: ByteGenerator = chain!(
 );
 
 
-fn generate_random_url_input(rng: &mut SmallRng) -> Vec<u8> {
+pub fn generate_random_url_input(rng: &mut SmallRng) -> Vec<u8> {
     URL_GENERATOR.generate(rng)
 }
