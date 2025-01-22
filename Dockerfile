@@ -1,7 +1,7 @@
 FROM rust:latest as rust-env
 
 # Install Python alongside Rust
-RUN apt-get update && apt-get install -y python3 python3-pip
+RUN apt-get update && apt-get install -y python3 python3-pip cmake
 # I need vim...
 RUN apt-get install -y vim
 
