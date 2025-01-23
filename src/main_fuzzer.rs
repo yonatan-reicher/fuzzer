@@ -5,8 +5,9 @@ use rand::{rngs::SmallRng, SeedableRng};
 use crate::random_urls;
 mod predefined_inputs;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FuzzingMode {
+    #[default]
     Strings,
     Urls,
 }
@@ -18,12 +19,6 @@ impl FuzzingMode {
             "--urls" => Ok(FuzzingMode::Urls),
             _ => Err(format!("Invalid option: {}. Use --strings or --urls.", arg)),
         }
-    }
-}
-
-impl Default for FuzzingMode {
-    fn default() -> Self {
-        FuzzingMode::Strings
     }
 }
 
