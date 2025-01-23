@@ -2,6 +2,7 @@ use std::sync::{Arc, Condvar, Mutex, WaitTimeoutResult};
 use std::thread;
 use std::time::Duration;
 
+#[allow(dead_code)]
 pub fn delay(delay: Duration, action: impl FnOnce() + Send + 'static) {
     thread::spawn(move || {
         thread::sleep(delay);
@@ -9,6 +10,7 @@ pub fn delay(delay: Duration, action: impl FnOnce() + Send + 'static) {
     });
 }
 
+#[allow(dead_code)]
 pub fn cancelable_delay(delay: Duration, action: impl FnOnce() + Send + 'static) -> impl FnOnce() {
     use crate::flag::WaitableFlag;
 
@@ -42,7 +44,7 @@ struct Request<A: Action> {
     action: A,
 }
 
-trait Action: FnOnce() + Send + 'static {}
+pub trait Action: FnOnce() + Send + 'static {}
 impl<T> Action for T where T: FnOnce() + Send + 'static {}
 
 impl<A: Action> Delayer<A> {
@@ -80,13 +82,6 @@ impl<A: Action> Delayer<A> {
         });
         Self::start_worker(state.clone());
         Self { state }
-    }
-
-    /// Sets an action to be performed after a delay, cancelling the previous
-    /// action if it was not yet performed.
-    pub fn cancel_and_set(&self, delay: Duration, action: A) {
-        self.cancel();
-        self.set(delay, action);
     }
 
     pub fn cancel(&self) {
