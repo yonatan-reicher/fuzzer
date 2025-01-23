@@ -16,9 +16,9 @@ class Colors:
 def colorize(text, color):
     return f"{color}{text}{Colors.RESET}"
 
-def run_command(command, cwd=None, shell=False):
+def run_command(command, cwd=None, shell=False, timeout=None):
     try:
-        result = subprocess.run(command, cwd=cwd, check=True, stderr=sys.stderr, stdout=sys.stdout, text=True, shell=shell)
+        result = subprocess.run(command, cwd=cwd, check=True, stderr=sys.stderr, stdout=sys.stdout, text=True, shell=shell, timeout=timeout)
         if result.stdout:
             print(colorize(result.stdout.strip(), Colors.GREEN))
         return result
@@ -80,12 +80,14 @@ def run_fuzzer_tests(root_folder, fuzzer_path):
         if os.path.isfile(main_executable):
             print(colorize(f"Running fuzzer on {main_executable}", Colors.CYAN))
             try:
-                run_command([fuzzer_path, '--urls', main_executable])
+                run_command([fuzzer_path, '--urls', main_executable], timeout=30)
             except subprocess.CalledProcessError as e:
                 if e.stderr:
                     print(colorize(f"Error running fuzzer on {main_executable}: {e.stderr.strip()}", Colors.RED))
                 if e.stdout:
                     print(colorize(f"Error running fuzzer on {main_executable}: {e.stderr.strip()}", Colors.YELLOW))
+            except subprocess.TimeoutExpired:
+                print(colorize(f"Timeout running fuzzer on {main_executable}", Colors.RED))
 
 
 def clean_make_cmake(root_folder):

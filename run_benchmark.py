@@ -66,18 +66,24 @@ def run_fuzzer_on_file(executable_path: str):
     Invokes the Rust fuzzer with --strings <executable_path>.
     Returns (return_code, stdout, stderr, duration).
     """
+    timeout_seconds: float = 30
     cmd = FUZZER_CMD + [executable_path]
     start_time = time.perf_counter()
-    completed = subprocess.run(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
-    end_time = time.perf_counter()
+    try:
+        completed = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=timeout_seconds
+        )
+    except subprocess.TimeoutExpired:
+        return (None, '', '', timeout_seconds)
+    else:
+        end_time = time.perf_counter()
 
-    duration = end_time - start_time
-    return (completed.returncode, completed.stdout, completed.stderr, duration)
+        duration = end_time - start_time
+        return (completed.returncode, completed.stdout, completed.stderr, duration)
 
 def main():
     # 1) Create the compiled_binaries directory if it does not exist
@@ -112,7 +118,7 @@ def main():
         rc, out, err, duration = run_fuzzer_on_file(
                 compiled_binary if not is_windows() else f"{compiled_binary}.exe"
             )
-        print(f"Return code     : {rc}")
+        print(f"Return code     : {rc}" if rc is not None else "TIMEOUT")
         print(f"Execution time  : {duration:.2f} seconds")
         print("Fuzzer stdout   :")
         print(out.strip())
