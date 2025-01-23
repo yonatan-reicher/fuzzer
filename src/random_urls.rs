@@ -2,7 +2,6 @@ use crate::random_strings::{
     chain, choose_generator, choose_string, then, repeat, ByteGenerator, Generator, 
 };
 use rand::seq::SliceRandom;
-use rand::SeedableRng;
 use rand::{rngs::SmallRng, Rng};
 
 const fn string<const MIN_LENGTH: usize, const MAX_LENGTH: usize>() -> Generator<String> {
