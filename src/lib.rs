@@ -7,6 +7,7 @@ mod random_strings;
 mod flag;
 mod random_urls;
 mod delay;
+mod mutations;
 
 // Re-export commonly used types and functions
 pub use fuzzer::Fuzzer;
