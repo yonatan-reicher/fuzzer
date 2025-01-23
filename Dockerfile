@@ -17,6 +17,7 @@ WORKDIR /home/sandboxuser/fuzzer
 USER sandboxuser
 
 RUN cargo build --release
+RUN chmod +x ./resources/ --recursive
 
 # Default CMD to run the fuzzer
 CMD ["cargo", "run", "--release"]
