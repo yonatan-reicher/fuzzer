@@ -28,7 +28,7 @@ enum State {
     /// This state sequentially yields the input from our big naughty strings list.
     PredefinedInput(usize),
     /// This state generates random input from the random input generators.
-    Random { random_state: SmallRng },
+    Random,
 }
 
 impl Default for State {
@@ -38,16 +38,19 @@ impl Default for State {
 }
 
 /// The fuzzer that generates random string input
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct MainFuzzer {
     state: State,
     mode: FuzzingMode,
+    random_state: SmallRng,
 }
+
 impl MainFuzzer {
     pub fn new(mode: FuzzingMode) -> Self {
         Self {
             state: State::default(),
             mode,
+            random_state: SmallRng::from_entropy(),
         }
     }
 
@@ -57,17 +60,13 @@ impl MainFuzzer {
                 let (output, reached_end) =
                     predefined_inputs::get(|input| (input[i], i + 1 >= input.len()));
                 self.state = if reached_end {
-                    State::Random {
-                        random_state: SmallRng::from_entropy(),
-                    }
+                    State::Random
                 } else {
                     State::PredefinedInput(i + 1)
                 };
                 output.to_vec()
             }
-            State::Random {
-                ref mut random_state,
-            } => generate_random_input(random_state),
+            State::Random => generate_random_input(&mut self.random_state),
         }
     }
     
@@ -77,17 +76,13 @@ impl MainFuzzer {
                 let (output, reached_end) =
                     predefined_inputs::get(|input| (input[i], i + 1 >= input.len()));
                 self.state = if reached_end {
-                    State::Random {
-                        random_state: SmallRng::from_entropy(),
-                    }
+                    State::Random 
                 } else {
                     State::PredefinedInput(i + 1)
                 };
                 output.to_vec()
             }
-            State::Random {
-                ref mut random_state,
-            } => random_urls::generate_random_url_input(random_state),
+            State::Random => random_urls::generate_random_url_input(&mut self.random_state),
         }
     }
 }
@@ -153,7 +148,7 @@ mod tests {
 
     #[test]
     fn fuzzer_moves_to_next_state() {
-        let mut fuzz = MainFuzzer::default();
+        let mut fuzz = MainFuzzer::new(FuzzingMode::Strings);
         let n = predefined_inputs::get(|input| input.len());
         for _ in 0..n {
             fuzz.generate_input();
@@ -163,7 +158,7 @@ mod tests {
 
     #[test]
     fn fuzzer_generates_fast() {
-        let mut fuzz = MainFuzzer::default();
+        let mut fuzz = MainFuzzer::new(FuzzingMode::Strings);
 
         const AMOUNT: usize = 100000;
         let start_time = std::time::Instant::now();
