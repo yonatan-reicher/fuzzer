@@ -28,12 +28,7 @@ fn main() -> Result<(), String> {
     let fuzzer = MainFuzzer::new(mode);
     
 
-    let mut runner = MainRunner::new(
-        executable,
-        // TODO: Get from CLI?
-        Duration::from_secs(5),
-        fuzzer
-    );
+    let mut runner = MainRunner::new(executable, fuzzer);
     runner.run();
     // TODO: Report Metrics
 

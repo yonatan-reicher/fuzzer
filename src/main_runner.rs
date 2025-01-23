@@ -1,6 +1,5 @@
 use crate::fuzzer::Fuzzer;
 use crate::runner::{ProgramResult, Runner};
-use crate::stoppable_loop::{LoopAction, StoppableLoop};
 use shared_child::SharedChild;
 use std::{
     fmt::{self, Display, Formatter},
@@ -22,16 +21,8 @@ const SINGLE_EXECUTION_TIMEOUT_SECS: f32 = 1.5;
 /// Every execution has it's own individual timeout of `SINGLE_EXECUTION_TIMEOUT_SECS`.
 pub struct MainRunner<F: Fuzzer> {
     executable: PathBuf,
-    timeout: Duration,
     fuzzer: F,
     single_execution_timeout: Duration,
-}
-
-struct RunnerLoopAction<'path, 'fuzzer, Fuzzer> {
-    fuzzer: &'fuzzer mut Fuzzer,
-    executable: &'path Path,
-    single_execution_timeout: Duration,
-    delayer: Delayer<Box<dyn FnOnce() + Send + 'static>>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -40,10 +31,9 @@ enum WaitWithTimeoutResult {
     Timeout,
 }
 impl<T: Fuzzer> MainRunner<T> {
-    pub fn new(executable: PathBuf, timeout: Duration, fuzzer: T) -> Self {
+    pub fn new(executable: PathBuf, fuzzer: T) -> Self {
         Self {
             executable,
-            timeout,
             fuzzer,
             single_execution_timeout: Duration::from_secs_f32(SINGLE_EXECUTION_TIMEOUT_SECS),
         }
@@ -71,31 +61,6 @@ fn spawn_with_stdin(executable: &Path, input: &[u8]) -> io::Result<SharedChild> 
     Ok(child)
 }
 
-fn stop(child: &Arc<SharedChild>) {
-    child.kill().expect("could not kill child process");
-}
-
-fn wait<F>(
-    runner: &mut RunnerLoopAction<F>,
-    child: Arc<SharedChild>,
-    input: Vec<u8>,
-) -> Option<Vec<u8>> {
-    match wait_with_timeout(child.clone(), runner.single_execution_timeout, &runner.delayer) {
-        WaitWithTimeoutResult::Timeout => None,
-        WaitWithTimeoutResult::Finished(exit_status) => {
-            if exit_status.success() {
-                None
-            } else {
-                // Only return the input if the execution failed, and not
-                // because of a timeout!
-                Some(input)
-            }
-        }
-    }
-}
-
-
-
 fn wait_with_timeout(
     child: Arc<SharedChild>,
     timeout: Duration,
@@ -122,29 +87,6 @@ fn wait_with_timeout(
     }
 }
 
-impl<'p, 'f, F: Fuzzer> LoopAction for RunnerLoopAction<'p, 'f, F> {
-    type Stop = Arc<SharedChild>;
-    type Wait = (Arc<SharedChild>, Vec<u8>);
-
-    type Output = Vec<u8>;
-
-    fn stop(child: &Self::Stop) {
-        stop(child);
-    }
-
-    fn wait(&mut self, (child, input): Self::Wait) -> Option<Self::Output> {
-        wait(self, child, input)
-    }
-
-    fn start(&mut self) -> (Self::Stop, Self::Wait) {
-        let input = self.fuzzer.generate_input();
-        let child =
-            spawn_with_stdin(self.executable, &input).expect("could not spawn child process");
-        let child = Arc::new(child);
-        (child.clone(), (child, input))
-    }
-}
-
 struct InputFoundPrinter(Vec<u8>);
 
 impl Display for InputFoundPrinter {
@@ -158,26 +100,34 @@ impl Display for InputFoundPrinter {
     }
 }
 
+impl<F: Fuzzer> MainRunner<F> {
+    fn search_for_input(&mut self) -> Vec<u8> {
+        let delayer = Delayer::new();
+        loop {
+            let input = self.fuzzer.generate_input();
+            let child = spawn_with_stdin(&self.executable, &input)
+                .expect("could not spawn child process");
+            let result = wait_with_timeout(child.into(), self.single_execution_timeout, &delayer);
+            match result {
+                WaitWithTimeoutResult::Finished(exit_status) => {
+
+                    if !exit_status.success() {
+                        return input;
+                    }
+                }
+                WaitWithTimeoutResult::Timeout => return input,
+            }
+        }
+    }
+}
+
 impl<T: Fuzzer + Send> Runner for MainRunner<T> {
     fn run(&mut self) {
-        let mut searcher = StoppableLoop::new(RunnerLoopAction {
-            fuzzer: &mut self.fuzzer,
-            executable: &self.executable,
-            single_execution_timeout: self.single_execution_timeout,
-            delayer: Delayer::new(),
-        });
-
-        let stop = searcher.get_stop();
-        delay(self.timeout, stop);
-
-        let input_found = searcher.run();
-        match input_found {
-            Some(result) => println!(
-                "Execution succeeded. Output: '{}'",
-                InputFoundPrinter(result)
-            ),
-            None => println!("Execution timed out"),
-        }
+        let input_found = self.search_for_input();
+        println!(
+            "Execution succeeded. Output: '{}'",
+            InputFoundPrinter(input_found)
+        )
     }
 
     fn run_with_input(&mut self, _input: &[u8]) -> Result<ProgramResult, String> {
