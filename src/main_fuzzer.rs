@@ -1,8 +1,11 @@
+use crate::mutations::FuzzingMutation;
 use crate::random_strings;
 use crate::Fuzzer;
 use rand::seq::SliceRandom;
+use rand::Rng;
 use rand::{rngs::SmallRng, SeedableRng};
 use crate::random_urls;
+use crate::mutations;
 mod predefined_inputs;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
@@ -29,6 +32,7 @@ enum State {
     PredefinedInput(usize),
     /// This state generates random input from the random input generators.
     Random,
+    Mutate { previous_input: Vec<u8> },
 }
 
 impl Default for State {
@@ -67,6 +71,7 @@ impl MainFuzzer {
                 output.to_vec()
             }
             State::Random => generate_random_input(&mut self.random_state),
+            State::Mutate { .. } => unsafe { std::hint::unreachable_unchecked() },
         }
     }
     
@@ -82,9 +87,79 @@ impl MainFuzzer {
                 };
                 output.to_vec()
             }
-            State::Random => random_urls::generate_random_url_input(&mut self.random_state),
+            State::Random => {
+                if self.random_state.gen_bool(0.5) {
+                    let ret = random_urls::generate_random_url_input(&mut self.random_state);
+                    self.state = State::Mutate { previous_input: ret.clone() };
+                    ret
+                } else {
+                    random_urls::generate_random_url_input(&mut self.random_state)
+                }
+            }
+            State::Mutate { ref mut previous_input } => {
+                if self.random_state.gen_bool(0.8) {
+                    mutate(previous_input, &mut self.random_state);
+                    previous_input.clone()
+                } else {
+                    let previous_input = previous_input.clone();
+                    self.state = State::Random;
+                    previous_input
+                }
+            }
         }
     }
+}
+
+fn duplicate_random_substring<const MAX_LEN: usize>(input: &mut Vec<u8>, random_state: &mut SmallRng) {
+    let start = random_state.gen_range(0..input.len());
+    let mut end = random_state.gen_range(start..input.len());
+    if end - start > MAX_LEN { end = start + MAX_LEN; }
+    let substring = input[start..end].to_vec();
+    // Place it again after itself
+    input.splice(end..end, substring.iter().cloned());
+}
+
+fn duplicate_random_substring_at_random_location<const MAX_LEN: usize>(input: &mut Vec<u8>, random_state: &mut SmallRng) {
+    let start = random_state.gen_range(0..input.len());
+    let mut end = random_state.gen_range(start..input.len());
+    if end - start > MAX_LEN { end = start + MAX_LEN; }
+    let substring = input[start..end].to_vec();
+    let location = random_state.gen_range(0..input.len());
+    input.splice(location..location, substring.iter().cloned());
+}
+
+#[allow(clippy::ptr_arg)]
+fn bit_flip(input: &mut Vec<u8>, random_state: &mut SmallRng) {
+    if input.is_empty() {
+        return;
+    }
+    let idx = random_state.gen_range(0..input.len());
+    let bit = random_state.gen_range(0..8u8);
+    input[idx] ^= 1 << bit;
+}
+
+fn remove_random_substring<const MAX_LEN: usize>(input: &mut Vec<u8>, random_state: &mut SmallRng) {
+    let start = random_state.gen_range(0..input.len());
+    let mut end = random_state.gen_range(start..input.len());
+    if end - start > MAX_LEN { end = start + MAX_LEN; }
+    input.drain(start..end);
+}
+
+type Mutation = fn(&mut Vec<u8>, &mut SmallRng);
+type Weight = u8;
+const MUTATIONS: &[(Weight, Mutation)] = &[
+    (10, duplicate_random_substring::<{usize::MAX}>),
+    (10, duplicate_random_substring_at_random_location::<{usize::MAX}>),
+    (15, remove_random_substring::<{usize::MAX}>),
+    (10, duplicate_random_substring::<5>),
+    (10, duplicate_random_substring_at_random_location::<5>),
+    (15, remove_random_substring::<5>),
+    (1, bit_flip),
+];
+
+fn mutate(input: &mut Vec<u8>, random_state: &mut SmallRng) {
+    let (_, mutation) = MUTATIONS.choose_weighted(&mut *random_state, |(w, _)| *w).unwrap();
+    mutation(input, random_state);
 }
 
 impl Fuzzer for MainFuzzer {
