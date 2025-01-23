@@ -91,7 +91,6 @@ impl<A: Action> Delayer<A> {
     }
 
     pub fn set(&self, delay: Duration, action: A) {
-        assert!(delay > Duration::from_secs(0));
         self.state.request.lock().unwrap().replace(Request { delay, action });
     }
 }
