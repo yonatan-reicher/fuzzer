@@ -1,11 +1,9 @@
-use crate::mutations::FuzzingMutation;
 use crate::random_strings;
 use crate::Fuzzer;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use rand::{rngs::SmallRng, SeedableRng};
 use crate::random_urls;
-use crate::mutations;
 mod predefined_inputs;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
@@ -88,17 +86,15 @@ impl MainFuzzer {
                 output.to_vec()
             }
             State::Random => {
+                let ret = random_urls::generate_random_url_input(&mut self.random_state);
                 if self.random_state.gen_bool(0.5) {
-                    let ret = random_urls::generate_random_url_input(&mut self.random_state);
                     self.state = State::Mutate { previous_input: ret.clone() };
-                    ret
-                } else {
-                    random_urls::generate_random_url_input(&mut self.random_state)
-                }
+                } 
+                ret
             }
             State::Mutate { ref mut previous_input } => {
-                if self.random_state.gen_bool(0.8) {
-                    mutate(previous_input, &mut self.random_state);
+                mutate(previous_input, &mut self.random_state);
+                if self.random_state.gen_bool(0.5) {
                     previous_input.clone()
                 } else {
                     let previous_input = previous_input.clone();
@@ -129,13 +125,12 @@ fn duplicate_random_substring_at_random_location<const MAX_LEN: usize>(input: &m
 }
 
 #[allow(clippy::ptr_arg)]
-fn bit_flip(input: &mut Vec<u8>, random_state: &mut SmallRng) {
+fn randomize_char(input: &mut Vec<u8>, random_state: &mut SmallRng) {
     if input.is_empty() {
         return;
     }
     let idx = random_state.gen_range(0..input.len());
-    let bit = random_state.gen_range(0..8u8);
-    input[idx] ^= 1 << bit;
+    input[idx] = random_state.gen();
 }
 
 fn remove_random_substring<const MAX_LEN: usize>(input: &mut Vec<u8>, random_state: &mut SmallRng) {
@@ -145,16 +140,37 @@ fn remove_random_substring<const MAX_LEN: usize>(input: &mut Vec<u8>, random_sta
     input.drain(start..end);
 }
 
+fn add_important_substring(input: &mut Vec<u8>, random_state: &mut SmallRng) {
+    let idx = random_state.gen_range(0..input.len());
+    let s = [
+        "?",
+        "\0",
+        "://",
+        "http://",
+        "#",
+        "=",
+        "א",
+        ":",
+        " ",
+        "\\",
+        "/",
+        "+",
+        "&",
+    ].choose(&mut *random_state).unwrap();
+    input.splice(idx..idx, s.bytes());
+}
+
 type Mutation = fn(&mut Vec<u8>, &mut SmallRng);
 type Weight = u8;
 const MUTATIONS: &[(Weight, Mutation)] = &[
-    (10, duplicate_random_substring::<{usize::MAX}>),
-    (10, duplicate_random_substring_at_random_location::<{usize::MAX}>),
-    (15, remove_random_substring::<{usize::MAX}>),
-    (10, duplicate_random_substring::<5>),
-    (10, duplicate_random_substring_at_random_location::<5>),
-    (15, remove_random_substring::<5>),
-    (1, bit_flip),
+    (3, duplicate_random_substring::<{usize::MAX}>),
+    (3, duplicate_random_substring_at_random_location::<{usize::MAX}>),
+    (5, remove_random_substring::<{usize::MAX}>),
+    (6, duplicate_random_substring::<5>),
+    (5, duplicate_random_substring_at_random_location::<5>),
+    (8, remove_random_substring::<5>),
+    (6, randomize_char),
+    (5, add_important_substring),
 ];
 
 fn mutate(input: &mut Vec<u8>, random_state: &mut SmallRng) {
@@ -232,8 +248,25 @@ mod tests {
     }
 
     #[test]
-    fn fuzzer_generates_fast() {
+    fn fuzzer_generates_strings_fast() {
         let mut fuzz = MainFuzzer::new(FuzzingMode::Strings);
+        fuzz.state = State::Random;
+
+        const AMOUNT: usize = 100000;
+        let start_time = std::time::Instant::now();
+        for _ in 0..AMOUNT {
+            std::hint::black_box(fuzz.generate_input());
+        }
+        let elapsed_seconds = start_time.elapsed().as_secs_f64();
+        let average_milis = elapsed_seconds * 1000.0 / AMOUNT as f64;
+        println!("Average time: {:.5} ms", average_milis);
+        assert!(average_milis < 0.01);
+    }
+
+    #[test]
+    fn fuzzer_generates_urls_fast() {
+        let mut fuzz = MainFuzzer::new(FuzzingMode::Urls);
+        fuzz.state = State::Random;
 
         const AMOUNT: usize = 100000;
         let start_time = std::time::Instant::now();

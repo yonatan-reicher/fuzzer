@@ -142,7 +142,7 @@ macro_rules! repeat {
     ($min:literal .. $max:literal, $generator:expr $(,)?) => {
         $crate::random_strings::Generator::from_fn(|rand| {
             use rand::Rng;
-            let amount = rand.gen_range($min..$max);
+            let amount = rand.gen_range($min..=$max);
             let mut ret = Vec::new();
             for _ in 0..amount {
                 ret.extend($generator.generate(rand));

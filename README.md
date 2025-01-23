@@ -33,9 +33,14 @@ docker-compose run --rm fuzzer-sandbox <command>
 
 ## Unspecified Behaviour
 
+We assume that programs which get stuck in infinite loops or are blocking
+forever for any other reason are not considered crashing. Additionally, we
+assume that programs will typically run for very short periods of time (less
+then a second).
+
 ## Resources Used
 
-This list of strings is representetive of cases that are likely to cause issues
+This list of strings is representative of cases that are likely to cause issues
 which would be improbable to generate randomly. We thought of using a list of
 predefined edge cases in inspiration of `kotest`, the property testing library.
 https://github.com/danielmiessler/SecLists/blob/master/Fuzzing/big-list-of-naughty-strings.txt

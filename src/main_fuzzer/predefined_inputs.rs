@@ -9,6 +9,13 @@ const OUR_BAD_INPUTS: &[&[u8]] = &[
     &[72, 101, 108, 108, 111, 0, 87, 111, 114, 108, 100, 33],
     // Hello\nWorld!
     &[72, 101, 108, 108, 111, 10, 87, 111, 114, 108, 100, 33],
+    b"://",
+    b"/",
+    b"a://#",
+    // IPv4 all bits
+    b"255.255.255.255",
+    // IPv6 all bits
+    b"[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]",
 ];
 
 fn our_bad_inputs() -> impl Iterator<Item = &'static [u8]> {
