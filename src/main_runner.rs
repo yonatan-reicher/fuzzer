@@ -9,7 +9,7 @@ use std::{
     time::Duration,
 };
 use crate::flag::Flag;
-use crate::delay::{delay, Delayer, cancelable_delay};
+use crate::delay::Delayer;
 
 
 const SINGLE_EXECUTION_TIMEOUT_SECS: f32 = 1.5;
