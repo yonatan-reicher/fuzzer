@@ -56,6 +56,7 @@ def process_testcases(root_folder, custom_cmake_command):
 
             main_c_file = os.path.join(subdir, 'main.c')
             main_executable = os.path.join(subdir, 'main')
+            main_executable_win = os.path.join(subdir, 'main.exe')
 
             if has_cmake:
                 print(colorize(f"Compiling {main_c_file} with gcc to create main executable", Colors.CYAN))
@@ -66,7 +67,7 @@ def process_testcases(root_folder, custom_cmake_command):
                     print(colorize(f"Failed to compile {main_c_file} in {subdir}", Colors.RED))
                     all_targets_built = False
 
-            if os.path.isfile(main_executable):
+            if os.path.isfile(main_executable) or os.path.isfile(main_executable_win):
                 print(colorize(f"Successfully built 'main' in {subdir}", Colors.GREEN))
             else:
                 print(colorize(f"'main' executable not found after gcc in {subdir}", Colors.RED))
@@ -77,7 +78,9 @@ def process_testcases(root_folder, custom_cmake_command):
 def run_fuzzer_tests(root_folder, fuzzer_path):
     for subdir in immediate_subfolders(root_folder):
         main_executable = os.path.join(subdir, 'main')
-        if os.path.isfile(main_executable):
+        if not os.path.isfile(main_executable): main_executable = os.path.join(subdir, 'main.exe')
+
+        if os.path.isfile(main_executable): 
             print(colorize(f"Running fuzzer on {main_executable}", Colors.CYAN))
             try:
                 run_command([fuzzer_path, '--urls', main_executable], timeout=30)
