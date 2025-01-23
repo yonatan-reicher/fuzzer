@@ -11,16 +11,29 @@ services:
     command: python3 run_benchmark.py
     networks:
       - sandbox-net
-    # I might have gone overboard with the resources and security options, but this is just a sandbox
-#    deploy:
-#      resources:
-#        limits:
-#          cpus: "1.0"          # Limit CPU usage
-#          memory: "512M"       # Limit memory usage
     security_opt:
       - no-new-privileges:true  # Disable privilege escalation
     cap_drop:
       - ALL                    # Drop all Linux capabilities
+
+  url-benchmark:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fuzzer-sandbox:latest
+    container_name: url-benchmark
+    stdin_open: true
+    tty: true
+    # Change the working directory if needed; or keep the same if everything is located under /home/sandboxuser/fuzzer
+    working_dir: /home/sandboxuser/fuzzer/url_benchmark
+    # If you want to pass specific flags, do it in the command or via environment variables.
+    command: python3 run.py --testcases-folder ./testcases --fuzzer-path ../target/release/fuzzer
+    networks:
+      - sandbox-net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
 networks:
   sandbox-net:
