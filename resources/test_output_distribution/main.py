@@ -32,18 +32,21 @@ def compile_word_generator():
 
 
 def run_word_generator():
-    subprocess.run(
-        [
-            "cargo",
-            "run",
-            "--release",
-            "--",
-            "--strings",
-            GENERATE_WORDS_EXE_PATH,
-        ],
-        check=True,
-    )
-
+    try:
+        subprocess.run(
+            [
+                "cargo",
+                "run",
+                "--release",
+                "--",
+                "--strings",
+                GENERATE_WORDS_EXE_PATH,
+            ],
+            check=True,
+            timeout=30,
+        )
+    except subprocess.TimeoutExpired: pass
+    print("Word generation finished")
 
 def rm_words():
     subprocess.run(
@@ -150,6 +153,8 @@ def show_generated_by_count(info: Info):
 def show_filtered(info: Info):
     expr = input("Enter filter: ")
     try:
+        total_amount = 0
+        unique_amount = 0
         for (word, count) in sorted_by_count(info):
             locals = {
                 "count": count,
@@ -159,6 +164,10 @@ def show_filtered(info: Info):
             }
             if eval(expr, {}, locals):
                 print(f"{count}: {prettify_word(word)}")
+                total_amount += count
+                unique_amount += 1
+        print(f"Total amount: {total_amount}")
+        print(f"Unique amount: {unique_amount}")
     except Exception as e:
         print(f"Error: {e}")
 
