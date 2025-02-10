@@ -115,7 +115,7 @@ impl<F: Fuzzer> MainRunner<F> {
                         return input;
                     }
                 }
-                WaitWithTimeoutResult::Timeout => return input,
+                WaitWithTimeoutResult::Timeout => (),
             }
         }
     }
