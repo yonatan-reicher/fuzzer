@@ -16,7 +16,7 @@ pub enum FuzzingMode {
 impl FuzzingMode {
     pub fn from_arg(arg: &str) -> Result<Self, String> {
         match arg {
-            "--strings" => Ok(FuzzingMode::Strings),
+            "--strings" | "--string" => Ok(FuzzingMode::Strings),
             "--urls" => Ok(FuzzingMode::Urls),
             _ => Err(format!("Invalid option: {}. Use --strings or --urls.", arg)),
         }
