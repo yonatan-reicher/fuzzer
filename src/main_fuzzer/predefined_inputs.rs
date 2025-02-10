@@ -16,6 +16,17 @@ const OUR_BAD_INPUTS: &[&[u8]] = &[
     b"255.255.255.255",
     // IPv6 all bits
     b"[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]",
+    // Single char inputs
+    b"a",
+    b"0",
+    b" ",
+    b"\n",
+    b"\t",
+    b"\r",
+    // Values around int max
+    b"2147483647",
+    b"2147483648",
+    b"2147483646",
 ];
 
 fn our_bad_inputs() -> impl Iterator<Item = &'static [u8]> {
