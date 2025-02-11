@@ -91,7 +91,10 @@ impl<A: Action> Delayer<A> {
     }
 
     pub fn set(&self, delay: Duration, action: A) {
+        let mut cancel = self.state.cancel.lock().unwrap();
+        *cancel = false;
         self.state.request.lock().unwrap().replace(Request { delay, action });
+        self.state.request_arrived.notify_all();
     }
 }
 
