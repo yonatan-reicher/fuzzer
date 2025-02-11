@@ -7,7 +7,7 @@ int main(void) {
     char input[32];
 
     if (!fgets(input, sizeof(input), stdin)) {
-        return 1;
+        return 0;
     }
     // Trim newline if present
     input[strcspn(input, "\n")] = '\0';

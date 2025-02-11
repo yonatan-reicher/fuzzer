@@ -8,5 +8,5 @@ if __name__ == "__main__":
         if '\n' in sys.stdin.read():
             print('A newline????!!')
             exit(1)
-    except:
+    except EOFError:
         pass
