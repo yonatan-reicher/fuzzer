@@ -14,6 +14,10 @@ int main() {
     std::string input;
     std::cout << "Enter a number: ";
     std::cin >> input;
+    if (input.empty()) {
+        std::cerr << "Error: empty input" << std::endl;
+        return 0;
+    }
     try {
         vulnerable_function(input);
     } catch (const std::exception &e) {
