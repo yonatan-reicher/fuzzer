@@ -1,6 +1,8 @@
 import os
 import subprocess
 import time
+import shutil
+from pathlib import Path
 
 
 def is_windows() -> bool:
@@ -91,8 +93,11 @@ def main():
 
     # 2) Collect all files in resources/benchmark
     all_files = os.listdir(BENCHMARK_DIR)
+    # TODO: Rename to c/cpp files
     source_files = [f for f in all_files if os.path.isfile(os.path.join(BENCHMARK_DIR, f))
                     and (f.endswith(".c") or f.endswith(".cpp"))]
+    py_files = [f for f in all_files if os.path.isfile(os.path.join(BENCHMARK_DIR, f))
+                    and f.endswith(".py")]
 
     # 3) Compile each .c / .cpp
     compiled_paths = []
@@ -106,6 +111,13 @@ def main():
             compiled_paths.append(out_path)
         else:
             print(f"[WARN] Skipping fuzzer run for {filename} due to compile error.")
+    # 3.5) And copy over each .py file!
+    for filename in py_files:
+        file_path = os.path.join(BENCHMARK_DIR, filename)
+        dest_path = os.path.join(COMPILED_DIR, filename)
+        shutil.copyfile(file_path, dest_path)
+        compiled_paths.append(dest_path)
+        os.chmod(dest_path, 0o777)
 
     if not compiled_paths:
         print("[INFO] No successfully compiled binaries. Exiting.")
