@@ -44,7 +44,7 @@ const BIG_LIST_OF_NAUGHTY_STRINGS: &str =
 
 fn naughty_strings_filtered() -> impl Iterator<Item = &'static str> {
     BIG_LIST_OF_NAUGHTY_STRINGS
-        .split('\n')
+        .split_inclusive('\n')
         // Filter away empty lines and comments
         .filter(|s| !s.is_empty() && !s.starts_with('#'))
 }
