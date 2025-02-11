@@ -23,6 +23,12 @@ const OUR_BAD_INPUTS: &[&[u8]] = &[
     b"\n",
     b"\t",
     b"\r",
+    // Single char inputs with a newline
+    b"a\n",
+    b"0\n",
+    b" \n",
+    b"\t\n",
+    b"\r\n",
     // Values around int max
     b"2147483647",
     b"2147483648",
